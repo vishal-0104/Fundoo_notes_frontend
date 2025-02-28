@@ -1,4 +1,4 @@
-
+/* General Styles */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -10,6 +10,7 @@ body {
     background-color: #f7f8fc;
 }
 
+/* Login Container */
 .fundoo-login-container {
     background: white;
     border-radius: 0.625rem;
@@ -19,12 +20,14 @@ body {
     text-align: center;
 }
 
+/* Fundoo Title */
 .fundoo-login-title {
     color: orange;
     font-size: 1.75rem;
     margin-bottom: 0.5rem;
 }
 
+/* Headings */
 h2 {
     font-size: 1.25rem;
     font-weight: normal;
@@ -36,7 +39,8 @@ p {
     margin-bottom: 1.5rem;
 }
 
-.fundoo-login-input-box{
+/* Input Fields */
+.fundoo-login-input-box {
     color: gray !important;
 }
 
@@ -44,20 +48,33 @@ p {
     color: grey !important;
 }
 
+/* Forgot Password Link */
 .fundoo-login-forgot-password {
     font-size: 0.875rem;
     color: #4285F4;
     text-decoration: none;
     display: flex;
+    justify-content: flex-start;
+    margin-bottom: 1rem;
+    cursor: pointer;
 }
 
-.fundoo-login-create-account{
+.fundoo-login-forgot-password:hover {
+    text-decoration: underline;
+}
+
+/* Create Account Link */
+.fundoo-login-create-account {
     font-size: 0.875rem;
     color: #4285F4;
-    text-decoration: none; 
+    text-decoration: none;
 }
 
+.fundoo-login-create-account:hover {
+    text-decoration: underline;
+}
 
+/* Actions (Login & Create Account) */
 .fundoo-login-actions {
     display: flex;
     justify-content: space-between;
@@ -65,7 +82,7 @@ p {
     margin-top: 1.5rem;
 }
 
-
+/* Login Button */
 .fundoo-login-submit-button {
     padding: 0.625rem 1.25rem;
     background-color: #4285F4;
@@ -74,8 +91,63 @@ p {
     border-radius: 0.3125rem;
     font-size: 1rem;
     cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
 .fundoo-login-submit-button:hover {
     background-color: #357ae8;
+}
+
+/* Modal Styling */
+.modal-content {
+    border-radius: 10px;
+}
+
+.modal-header {
+    background-color: #4285F4;
+    color: white;
+    border-radius: 10px 10px 0 0;
+}
+
+.modal-title {
+    font-size: 1.2rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+    font-size: 1rem;
+    color: #333;
+}
+
+/* Input Fields in Modal */
+.modal-body input {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Modal Footer */
+.modal-footer {
+    border-top: none;
+}
+
+/* Buttons inside Modal */
+.btn-primary {
+    background-color: #4285F4;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #357ae8;
+}
+
+.btn-secondary {
+    background-color: #ccc;
+    border: none;
+}
+
+.btn-secondary:hover {
+    background-color: #b3b3b3;
 }

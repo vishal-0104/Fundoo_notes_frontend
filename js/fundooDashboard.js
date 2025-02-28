@@ -5,6 +5,82 @@ document.addEventListener("DOMContentLoaded", function () {
     const createNoteSection = document.querySelector(".fundoo-dash-create-note");
     const apiUrl = "http://localhost:3000/api/v1/notes";
     const authToken = localStorage.getItem("jwtToken");
+    const noteModal = new bootstrap.Modal(document.getElementById("noteModal"));
+    const modalNoteTitle = document.getElementById("modalNoteTitle");
+    const modalNoteContent = document.getElementById("modalNoteContent");
+    const saveNoteBtn = document.getElementById("saveNoteBtn");
+    
+    let selectedNoteId = null;
+    
+    notesGrid.addEventListener("click", function (event) {
+        // ✅ Ensure the clicked element is NOT an icon (action buttons)
+        if (event.target.closest(".note-icons")) return;
+
+        const noteElement = event.target.closest(".fundoo-dash-note");
+        if (!noteElement) return;
+
+        selectedNoteId = noteElement.dataset.id;
+        const note = allNotes.find(n => n.id == selectedNoteId);
+
+        // 🚨 Prevent editing if the note is in Trash
+        if (currentView === "trash") {
+            alert("❌ Notes in Trash cannot be edited! Restore them first.");
+            selectedNoteId = null; // Reset the selected note
+            return; // Stop execution here
+        }
+
+        // ✅ Ensure that editing is only allowed in "Notes" and "Archive"
+        if (!note || (currentView !== "notes" && currentView !== "archive")) {
+            selectedNoteId = null; // Reset selected note to prevent further actions
+            return;
+        }
+
+        // ✅ Open modal only for editable notes
+        modalNoteTitle.value = note.title;
+        modalNoteContent.value = note.content;
+        noteModal.show();
+    });
+
+    // ✅ Save edited note
+    saveNoteBtn.addEventListener("click", async function () {
+        if (!selectedNoteId) return;
+
+        const updatedTitle = modalNoteTitle.value.trim();
+        const updatedContent = modalNoteContent.value.trim();
+
+        if (!updatedTitle || !updatedContent) {
+            alert("Title and content cannot be empty!");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}/${selectedNoteId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ note: { title: updatedTitle, content: updatedContent } })
+            });
+
+            if (!response.ok) throw new Error("Failed to update note");
+
+            // ✅ Update locally
+            const noteIndex = allNotes.findIndex(note => note.id == selectedNoteId);
+            if (noteIndex !== -1) {
+                allNotes[noteIndex].title = updatedTitle;
+                allNotes[noteIndex].content = updatedContent;
+                localStorage.setItem("allNotes", JSON.stringify(allNotes));
+                renderNotes();
+            }
+
+            noteModal.hide();
+        } catch (error) {
+            console.error("Error updating note:", error);
+        }
+    });
+
+    
     let currentView = "notes";
     let allNotes = JSON.parse(localStorage.getItem("allNotes")) || [];
     
