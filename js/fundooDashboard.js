@@ -5,12 +5,44 @@ document.addEventListener("DOMContentLoaded", function () {
     const createNoteSection = document.querySelector(".fundoo-dash-create-note");
     const apiUrl = "http://localhost:3000/api/v1/notes";
     const authToken = localStorage.getItem("jwtToken");
+    const userEmail = localStorage.getItem("userEmail");
+    const userName = localStorage.getItem("userName");
     const noteModal = new bootstrap.Modal(document.getElementById("noteModal"));
     const modalNoteTitle = document.getElementById("modalNoteTitle");
     const modalNoteContent = document.getElementById("modalNoteContent");
     const saveNoteBtn = document.getElementById("saveNoteBtn");
+    const profileInitial = document.getElementById("profileInitial");
+    const profileName = document.getElementById("profileName");
+    const profileEmail = document.getElementById("profileEmail");
     
     let selectedNoteId = null;
+    
+    function updateProfileDisplay() {
+        const userName = localStorage.getItem("userName");
+        const userEmail = localStorage.getItem("userEmail");
+
+        if (userName && userEmail) {
+            profileInitial.textContent = userEmail.charAt(0).toUpperCase();
+            profileName.textContent = userName;
+            profileEmail.textContent = userEmail;
+        } else {
+            profileInitial.textContent = "A";
+            profileName.textContent = "Guest";
+            profileEmail.textContent = "Not logged in";
+        }
+    }
+    const logoutButton = document.getElementById("Logout");
+    if (logoutButton) {
+        logoutButton.addEventListener("click", function () {
+            // Remove all user-related items from localStorage
+            localStorage.removeItem("jwtToken");
+            localStorage.removeItem("userEmail");
+            localStorage.removeItem("userName");
+            window.location.href = "fundooLogin.html";
+        });
+    }
+    
+    updateProfileDisplay();
     
     notesGrid.addEventListener("click", function (event) {
         // ✅ Ensure the clicked element is NOT an icon (action buttons)
@@ -280,11 +312,11 @@ document.addEventListener("DOMContentLoaded", function () {
         localStorage.setItem("allNotes", JSON.stringify(allNotes)); // Save updated notes
         renderNotes();
     }
-    const logoutButton = document.getElementById("Logout");
-  if (logoutButton) {
-      logoutButton.addEventListener("click", function () {
-          localStorage.removeItem("jwtToken"); // Remove authentication token
-          window.location.href = "fundooLogin.html"; // Redirect to login page
-      });
-  }
+//     const logoutButton = document.getElementById("Logout");
+//   if (logoutButton) {
+//       logoutButton.addEventListener("click", function () {
+//           localStorage.removeItem("jwtToken"); // Remove authentication token
+//           window.location.href = "fundooLogin.html"; // Redirect to login page
+//       });
+//   }
 });

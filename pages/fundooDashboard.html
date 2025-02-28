@@ -35,13 +35,20 @@
                     <div class="fundoo-dash-profile">
                         <div class="btn-group">
                             <button type="button" class="btn btn-secondary fundoo-dash-profile-button" data-bs-toggle="dropdown" aria-expanded="false">
-                              A
+                                <span id="profileInitial"></span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
-                              <li><button class="dropdown-item" type="button">Profile Settings</button></li>
-                              <li><button id="Logout" class="dropdown-item" type="button">Logout</button></li>
+                                <li>
+                                    <div class="dropdown-header">
+                                        <h4 id="profileName" class="profile-greeting" ></h4>
+                                        <small id="profileEmail"></small>
+                                    </div>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                
+                                <li><button id="Logout" class="dropdown-item" type="button">Logout</button></li>
                             </ul>
-                          </div>                          
+                        </div>
                     </div>
                 </header>
                 

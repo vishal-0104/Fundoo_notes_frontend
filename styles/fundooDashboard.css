@@ -221,3 +221,36 @@ body {
     outline: none;
     box-shadow: none;
 }
+.dropdown-header {
+    padding: 0.5rem 1rem;
+}
+
+#profileInitial {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.dropdown-menu {
+    min-width: 200px;
+}
+#profileName{
+    font-weight: bold;
+    color: black;
+}
+.profile-greeting {
+    margin: 0;
+    font-size: 1.3em; /* Slightly larger text */
+    font-weight: 600; /* Bold but not too heavy */
+    color: #333; /* Darker text for contrast */
+    display: flex;
+    align-items: center;
+    gap: 0.3em; /* Space between "Hi" and username */
+}
+
+.profile-greeting::before {
+    content: "Hi,"; /* Adds "Hi" before the username */
+    
+}
