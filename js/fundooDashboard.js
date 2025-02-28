@@ -14,13 +14,22 @@ document.addEventListener("DOMContentLoaded", function () {
     const profileInitial = document.getElementById("profileInitial");
     const profileName = document.getElementById("profileName");
     const profileEmail = document.getElementById("profileEmail");
-    
-    let selectedNoteId = null;
-    
-    function updateProfileDisplay() {
-        const userName = localStorage.getItem("userName");
-        const userEmail = localStorage.getItem("userEmail");
 
+    let selectedNoteId = null;
+    let currentView = "notes";
+    let allNotes = JSON.parse(localStorage.getItem("allNotes")) || [];
+
+    // Debounce utility function
+    function debounce(func, delay) {
+        let timeoutId;
+        return function (...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    // Profile display function
+    function updateProfileDisplay() {
         if (userName && userEmail) {
             profileInitial.textContent = userEmail.charAt(0).toUpperCase();
             profileName.textContent = userName;
@@ -31,21 +40,22 @@ document.addEventListener("DOMContentLoaded", function () {
             profileEmail.textContent = "Not logged in";
         }
     }
+
+    // Logout handler
     const logoutButton = document.getElementById("Logout");
     if (logoutButton) {
         logoutButton.addEventListener("click", function () {
-            // Remove all user-related items from localStorage
             localStorage.removeItem("jwtToken");
             localStorage.removeItem("userEmail");
             localStorage.removeItem("userName");
             window.location.href = "fundooLogin.html";
         });
     }
-    
+
     updateProfileDisplay();
-    
+
+    // Note click handler for editing
     notesGrid.addEventListener("click", function (event) {
-        // ✅ Ensure the clicked element is NOT an icon (action buttons)
         if (event.target.closest(".note-icons")) return;
 
         const noteElement = event.target.closest(".fundoo-dash-note");
@@ -54,26 +64,23 @@ document.addEventListener("DOMContentLoaded", function () {
         selectedNoteId = noteElement.dataset.id;
         const note = allNotes.find(n => n.id == selectedNoteId);
 
-        // 🚨 Prevent editing if the note is in Trash
         if (currentView === "trash") {
             alert("❌ Notes in Trash cannot be edited! Restore them first.");
-            selectedNoteId = null; // Reset the selected note
-            return; // Stop execution here
-        }
-
-        // ✅ Ensure that editing is only allowed in "Notes" and "Archive"
-        if (!note || (currentView !== "notes" && currentView !== "archive")) {
-            selectedNoteId = null; // Reset selected note to prevent further actions
+            selectedNoteId = null;
             return;
         }
 
-        // ✅ Open modal only for editable notes
+        if (!note || (currentView !== "notes" && currentView !== "archive")) {
+            selectedNoteId = null;
+            return;
+        }
+
         modalNoteTitle.value = note.title;
         modalNoteContent.value = note.content;
         noteModal.show();
     });
 
-    // ✅ Save edited note
+    // Save edited note
     saveNoteBtn.addEventListener("click", async function () {
         if (!selectedNoteId) return;
 
@@ -97,13 +104,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (!response.ok) throw new Error("Failed to update note");
 
-            // ✅ Update locally
             const noteIndex = allNotes.findIndex(note => note.id == selectedNoteId);
             if (noteIndex !== -1) {
                 allNotes[noteIndex].title = updatedTitle;
                 allNotes[noteIndex].content = updatedContent;
                 localStorage.setItem("allNotes", JSON.stringify(allNotes));
-                renderNotes();
+                renderNotesWithoutSearch();
             }
 
             noteModal.hide();
@@ -112,48 +118,26 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    
-    let currentView = "notes";
-    let allNotes = JSON.parse(localStorage.getItem("allNotes")) || [];
-    
     if (!authToken) {
         alert("You are not logged in!");
         return;
     }
-    
+
+    // Tab switch handlers
     document.getElementById("notesTab").addEventListener("click", () => switchView("notes"));
     document.getElementById("archiveTab").addEventListener("click", () => switchView("archive"));
     document.getElementById("trashTab").addEventListener("click", () => switchView("trash"));
-    searchInput.addEventListener("input", renderNotes);
-    
-    renderNotes();
+
+    // Debounced search handler
+    const debouncedSearch = debounce(renderNotesWithSearch, 300);
+    searchInput.addEventListener("input", debouncedSearch);
+
+    // Initial render and fetch
+    renderNotesWithoutSearch();
     fetchNotes();
-    
-    function switchView(view) {
-        currentView = view;
-        renderNotes();
-        createNoteSection.style.display = view === "notes" ? "block" : "none";
-        document.querySelectorAll(".fundoo-dash-sidebar li").forEach(tab => tab.classList.remove("active"));
-        document.getElementById(`${view}Tab`).classList.add("active");
-    }
-    
-    async function fetchNotes() {
-        try {
-            const response = await fetch(apiUrl, {
-                method: "GET",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${authToken}` }
-            });
-            const data = await response.json();
-            if (!Array.isArray(data.notes)) throw new Error("Invalid API response");
-            allNotes = data.notes;
-            localStorage.setItem("allNotes", JSON.stringify(allNotes));
-            renderNotes();
-        } catch (error) {
-            console.error("Error fetching notes:", error);
-        }
-    }
-    
-    function renderNotes() {
+
+    // Separate render functions
+    function renderNotesWithSearch() {
         notesGrid.innerHTML = "";
         const searchTerm = searchInput.value.toLowerCase();
         const filteredNotes = allNotes.filter(note =>
@@ -165,7 +149,42 @@ document.addEventListener("DOMContentLoaded", function () {
         if (filteredNotes.length === 0) notesGrid.innerHTML = "<p>No notes found</p>";
         filteredNotes.forEach(addNoteToGrid);
     }
-    
+
+    function renderNotesWithoutSearch() {
+        notesGrid.innerHTML = "";
+        const filteredNotes = allNotes.filter(note =>
+            (currentView === "notes" ? !note.is_deleted && !note.is_archived :
+            currentView === "archive" ? note.is_archived && !note.is_deleted :
+            currentView === "trash" ? note.is_deleted : false)
+        );
+        if (filteredNotes.length === 0) notesGrid.innerHTML = "<p>No notes found</p>";
+        filteredNotes.forEach(addNoteToGrid);
+    }
+
+    function switchView(view) {
+        currentView = view;
+        renderNotesWithoutSearch();
+        createNoteSection.style.display = view === "notes" ? "block" : "none";
+        document.querySelectorAll(".fundoo-dash-sidebar li").forEach(tab => tab.classList.remove("active"));
+        document.getElementById(`${view}Tab`).classList.add("active");
+    }
+
+    async function fetchNotes() {
+        try {
+            const response = await fetch(apiUrl, {
+                method: "GET",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${authToken}` }
+            });
+            const data = await response.json();
+            if (!Array.isArray(data.notes)) throw new Error("Invalid API response");
+            allNotes = data.notes;
+            localStorage.setItem("allNotes", JSON.stringify(allNotes));
+            renderNotesWithoutSearch();
+        } catch (error) {
+            console.error("Error fetching notes:", error);
+        }
+    }
+
     noteInput.addEventListener("blur", async function () {
         const content = noteInput.value.trim();
         if (!content) return;
@@ -179,12 +198,12 @@ document.addEventListener("DOMContentLoaded", function () {
             allNotes.push(newNote);
             localStorage.setItem("allNotes", JSON.stringify(allNotes));
             noteInput.value = "";
-            renderNotes();
+            renderNotesWithoutSearch();
         } catch (error) {
             console.error("Error creating note:", error);
         }
     });
-    
+
     function addNoteToGrid(note) {
         const noteElement = document.createElement("div");
         noteElement.classList.add("fundoo-dash-note");
@@ -211,7 +230,7 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
         notesGrid.prepend(noteElement);
     }
-    
+
     notesGrid.addEventListener("click", async function (event) {
         const target = event.target;
         const noteId = target.dataset.id;
@@ -231,7 +250,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 headers: { "Authorization": `Bearer ${authToken}` },
                 body: JSON.stringify({ note: { is_archived: archive } })
             });
-
             updateNoteLocally(id, { is_archived: archive, was_archived_before_delete: archive });
         } catch (error) {
             console.error("❌ Error toggling archive:", error);
@@ -245,13 +263,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 console.error("❌ Error: Note not found in local state.");
                 return;
             }
-
             await fetch(`${apiUrl}/${id}/soft_delete`, {
                 method: "PATCH",
                 headers: { "Authorization": `Bearer ${authToken}` },
                 body: JSON.stringify({ note: { is_deleted: deleteStatus } })
             });
-
             updateNoteLocally(id, {
                 is_deleted: deleteStatus,
                 is_archived: deleteStatus ? false : note.was_archived_before_delete
@@ -260,40 +276,29 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error("❌ Error moving note to trash:", error);
         }
     }
-    
-    
 
     async function deleteNote(id) {
         const noteIndex = allNotes.findIndex(note => note.id == id);
-    
         if (noteIndex === -1 || !allNotes[noteIndex].is_deleted) {
             alert("❌ You can only delete notes from the Trash!");
             return;
         }
-    
         if (!confirm("⚠️ Are you sure you want to delete this note permanently? This action cannot be undone.")) {
             return;
         }
-    
         try {
             await fetch(`${apiUrl}/${id}`, {
                 method: "DELETE",
                 headers: { "Authorization": `Bearer ${authToken}` }
             });
-    
-            // ✅ Remove the note from the `allNotes` array
             allNotes.splice(noteIndex, 1);
-    
-            // ✅ Update localStorage after deletion
             localStorage.setItem("allNotes", JSON.stringify(allNotes));
-    
-            // ✅ Re-render the Trash view correctly
-            renderNotes();
+            renderNotesWithoutSearch();
         } catch (error) {
             console.error("❌ Error deleting note permanently:", error);
         }
     }
-    
+
     async function changeColor(id) {
         const newColor = prompt("Enter new color (e.g., #ff5733):");
         if (!newColor) return;
@@ -304,19 +309,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 body: JSON.stringify({ note: { color: newColor } })
             });
             updateNoteLocally(id, { color: newColor });
-        } catch (error) { console.error("Error changing color:", error); }
+        } catch (error) {
+            console.error("Error changing color:", error);
+        }
     }
 
     function updateNoteLocally(id, updatedData) {
         allNotes = allNotes.map(note => (note.id == id ? { ...note, ...updatedData } : note));
-        localStorage.setItem("allNotes", JSON.stringify(allNotes)); // Save updated notes
-        renderNotes();
+        localStorage.setItem("allNotes", JSON.stringify(allNotes));
+        renderNotesWithoutSearch();
     }
-//     const logoutButton = document.getElementById("Logout");
-//   if (logoutButton) {
-//       logoutButton.addEventListener("click", function () {
-//           localStorage.removeItem("jwtToken"); // Remove authentication token
-//           window.location.href = "fundooLogin.html"; // Redirect to login page
-//       });
-//   }
 });
